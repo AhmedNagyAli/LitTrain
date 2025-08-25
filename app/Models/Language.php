@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Language extends Model
 {
-    protected $fillable = ['language'];
+    protected $fillable = ['language','code'];
 
     public function users()
     {
