@@ -10,6 +10,10 @@ class Book extends Model
         'title','meta_title','description','author_id','publisher_id','cover','file','file_type',
         'download_count','read_count','language_id','pages_number','slug','status'
     ];
+    const STATUS_PENDING  = 0;
+    const STATUS_ACCEPTED = 1;
+    const STATUS_REJECTED = 2;
+    const STATUS_ARCHIVED = 3;
 
     public function author()
     {
@@ -44,5 +48,14 @@ class Book extends Model
     public function ratings()
     {
         return $this->hasMany(BookRating::class);
+    }
+    public function getStatusLabelAttribute()
+    {
+        return [
+            self::STATUS_PENDING  => 'Pending',
+            self::STATUS_ACCEPTED => 'Accepted',
+            self::STATUS_REJECTED => 'Rejected',
+            self::STATUS_ARCHIVED => 'Archived',
+        ][$this->status] ?? 'Unknown';
     }
 }

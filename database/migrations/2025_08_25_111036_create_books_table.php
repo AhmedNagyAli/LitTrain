@@ -12,26 +12,33 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
+    // $table->foreignIdFor(Author::class)->cascadeOnDelete();
+    // $table->foreignIdFor(Publisher::class)->cascadeOnDelete();
+     public function up(): void
     {
         Schema::create('books', function (Blueprint $table) {
-    $table->id();
-    $table->string('title');
-    $table->string('meta_title')->nullable();
-    $table->string('slug')->unique();
-    $table->text('description')->nullable();
-    $table->foreignIdFor(Author::class)->cascadeOnDelete();
-    $table->foreignIdFor(Publisher::class)->cascadeOnDelete();
-    $table->string('cover')->nullable();
-    $table->string('file')->nullable();
-    $table->string('file_type')->nullable();
-    $table->integer('download_count')->default(0);
-    $table->integer('read_count')->default(0);
-    $table->foreignIdFor(Language::class)->cascadeOnDelete();
-    $table->integer('pages_number')->nullable();
-    $table->timestamps();
-});
+            $table->id();
 
+            $table->string('title');
+            $table->string('meta_title')->nullable();
+            $table->text('description')->nullable();
+
+            $table->foreignIdFor(Author::class)->cascadeOnDelete();
+            $table->foreignIdFor(Publisher::class)->cascadeOnDelete();
+            $table->foreignIdFor(Language::class)->cascadeOnDelete();
+
+            $table->string('cover')->nullable();       // image path
+            $table->string('file')->nullable();        // book file path
+            $table->string('file_type', 50)->nullable();
+
+            $table->unsignedBigInteger('download_count')->default(0);
+            $table->unsignedBigInteger('read_count')->default(0);
+
+            $table->integer('pages_number')->nullable();
+            $table->string('slug')->unique();
+            $table->tinyInteger('status')->default(0);
+            $table->timestamps();
+        });
     }
 
     /**

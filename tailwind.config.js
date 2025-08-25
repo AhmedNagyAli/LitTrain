@@ -7,9 +7,7 @@ export default {
     ],
     theme: {
         extend: {
-            fontFamily: {
-                almarai: ['Almarai', 'sans-serif'],
-            }
+
         },
     },
     plugins: [],

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class ChapterRecord extends Model
 {
-    protected $fillable = ['chapter_id','user_id','record_file','language_id'];
+    protected $fillable = ['chapter_id','user_id','record_file','duration','language_id'];
 
     public function chapter()
     {

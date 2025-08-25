@@ -6,7 +6,7 @@
     @stack('styles')
 </head>
 
-<body class="bg-gray-100 text-gray-900">
+<body class="bg-gray-100">
 
     @include('layouts.partials.navbar')
 
@@ -15,9 +15,28 @@
     </main>
 
     @include('layouts.partials.footer')
-    @yield('script')
     @stack('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        // Wait for DOM to be fully loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mobile menu functionality with null check
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+
+            if (mobileMenuButton && mobileMenu) {
+                mobileMenuButton.addEventListener('click', function() {
+                    mobileMenu.classList.toggle('hidden');
+                });
+            }
+
+        });
+
+        // Additional error handling for window errors
+        window.addEventListener('error', function(e) {
+            console.error('JavaScript Error:', e.error);
+        });
+    </script>
 </body>
 
 </html>

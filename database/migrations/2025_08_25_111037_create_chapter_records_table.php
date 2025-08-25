@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\BookChapter;
+use App\Models\Language;
 use App\Models\User;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -18,7 +19,8 @@ return new class extends Migration
     $table->foreignIdFor(BookChapter::class)->cascadeOnDelete();
     $table->foreignIdFor(User::class)->cascadeOnDelete();
     $table->string('record_file')->nullable();
-    $table->foreignId('language_id')->constrained('languages')->cascadeOnDelete();
+    $table->string('duration')->nullable();
+    $table->foreignIdFor(Language::class)->cascadeOnDelete();
     $table->timestamps();
 });
 
