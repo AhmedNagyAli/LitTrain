@@ -9,40 +9,42 @@ use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
     protected $fillable = [
-        'name',
-        'email',
-        'password',
+        'name','email','phone','bio','password','avatar','date_of_birth',
+        'verification_code','is_email_verified','language_id','role'
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
+    protected $hidden = ['password', 'verification_code'];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+    public function publishingRequests()
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $this->hasMany(PublishingRequest::class);
+    }
+
+    public function savedBooks()
+    {
+        return $this->belongsToMany(Book::class, 'user_saved_books');
+    }
+
+    public function writingRank()
+    {
+        return $this->hasOne(UserWritingRank::class);
+    }
+
+    public function language()
+    {
+        return $this->belongsTo(Language::class);
+    }
+
+    public function ratings()
+    {
+        return $this->hasMany(BookRating::class);
+    }
+
+    public function trainingSessions()
+    {
+        return $this->hasMany(TrainingSession::class);
     }
 }
