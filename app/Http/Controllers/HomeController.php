@@ -13,7 +13,9 @@ class HomeController extends Controller
         $selectedCategory = $request->get('category', 'latest');
 
         // Top featured books (first 10, or however you want)
-        $featuredBooks = Book::with('author', 'publisher', 'language')->latest()->paginate(10);
+        $featuredBooks = Book::with('author', 'publisher', 'language')
+        ->where('status','accepted')
+        ->latest()->paginate(10);
 
         // All categories
         $categories = Category::paginate(5);

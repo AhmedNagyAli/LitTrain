@@ -11,9 +11,9 @@
     <div class="relative">
         <div id="featured-carousel" class="flex overflow-x-auto space-x-4 pb-4 scrollbar-hide">
             @foreach ($featuredBooks as $book)
-                <div class="min-w-[200px] flex-shrink-0">
+                <div class="min-w-[400px] flex-shrink-0">
                     <div class="bg-white shadow-md rounded-lg p-4">
-                        <img src="{{ $book->image }}" alt="{{ $book->title }}" class="h-40 w-full object-cover rounded">
+                        <img src="{{ asset('storage/'.$book->cover) }}" alt="{{ $book->title }}" class="h-80 w-full object-cover rounded">
                         <h3 class="mt-2 text-lg font-semibold">{{ $book->title }}</h3>
                         <p class="text-sm text-gray-600">{{ $book->author->name }}</p>
                     </div>
@@ -44,7 +44,7 @@
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-6">
         @foreach ($books as $book)
             <div class="bg-white shadow-md rounded-lg p-4">
-                <img src="{{ $book->image }}" alt="{{ $book->title }}" class="h-40 w-full object-cover rounded">
+                <img src="{{ asset('storage/'.$book->cover) }}" alt="{{ $book->title }}" class="h-40 w-full object-cover rounded">
                 <h3 class="mt-2 text-lg font-semibold">{{ $book->title }}</h3>
                 <p class="text-sm text-gray-600">{{ $book->author->name }}</p>
             </div>
