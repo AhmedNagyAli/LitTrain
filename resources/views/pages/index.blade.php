@@ -11,10 +11,11 @@
     <div class="relative">
         <div id="featured-carousel" class="flex overflow-x-auto space-x-4 pb-4 scrollbar-hide">
             @foreach ($featuredBooks as $book)
-                <div class="min-w-[400px] flex-shrink-0">
-                    @component('components.book-card', ['book' => $book, 'featured' => true])
-                    @endcomponent
-                </div>
+                <div class="min-w-[200px] max-w-[200px] flex-shrink-0">
+    @component('components.book-card', ['book' => $book, 'featured' => true])
+    @endcomponent
+</div>
+
             @endforeach
         </div>
 

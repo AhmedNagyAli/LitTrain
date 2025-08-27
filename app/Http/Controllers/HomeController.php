@@ -15,7 +15,7 @@ class HomeController extends Controller
         // Top featured books (first 10, or however you want)
         $featuredBooks = Book::with('author', 'publisher', 'language')
         //->where('status','accepted')
-        ->latest()->paginate(10);
+        ->latest()->paginate(7);
 
         // All categories
         $categories = Category::paginate(5);
