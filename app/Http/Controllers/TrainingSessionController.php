@@ -10,7 +10,7 @@ class TrainingSessionController extends Controller
 {
     public function store(Request $request, Book $book)
 {
-    $this->validate($request, [
+    $request->validate([
         'duration' => 'required|integer',
         'accuracy' => 'required|numeric',
         'rank' => 'required',
@@ -18,6 +18,10 @@ class TrainingSessionController extends Controller
         'started_at' => 'required|date',
         'ended_at' => 'required|date',
     ]);
+
+    if (!auth()->check()) {
+        return response()->json(['error'=>'unauthenticated'],401);
+    }
 
     $session = TrainingSession::create([
         'user_id' => auth()->id(),
@@ -32,4 +36,5 @@ class TrainingSessionController extends Controller
 
     return response()->json($session);
 }
+
 }
