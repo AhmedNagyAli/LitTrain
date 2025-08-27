@@ -20,6 +20,7 @@ return new class extends Migration
     $table->string('meta_title')->nullable();
     $table->text('description')->nullable();
     $table->integer('pages_count')->nullable();
+    $table->integer('order')->default(0);
     $table->longText('chapter_text')->nullable();
     $table->timestamps();
 });

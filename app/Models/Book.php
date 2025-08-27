@@ -58,4 +58,13 @@ class Book extends Model
             self::STATUS_ARCHIVED => 'Archived',
         ][$this->status] ?? 'Unknown';
     }
+    public static function getStatusLabelAttributeStatic($status)
+{
+    return [
+        self::STATUS_PENDING => 'Pending',
+        self::STATUS_ACCEPTED => 'Accepted',
+        self::STATUS_REJECTED => 'Rejected',
+        self::STATUS_ARCHIVED => 'Archived',
+    ][$status] ?? 'Unknown';
+}
 }
