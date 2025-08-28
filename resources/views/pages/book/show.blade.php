@@ -55,6 +55,12 @@
                 {{-- Book Details --}}
                 <div class="md:w-2/3 p-6 @if($book->language->code === 'ar') rtl-content @endif">
                     <h1 class="text-3xl font-bold text-gray-800 mb-2">{{ $book->title }}</h1>
+                    @if($book->records->count())
+    <span id="audibleMark" class="bg-orange-800 text-white px-2 py-1 rounded font-semibold text-sm">
+        Audible
+    </span>
+@endif
+
                     <p class="text-lg text-gray-600 mb-4">
                         by <span class="font-semibold">{{ $book->author->name ?? 'Unknown Author' }}</span>
                     </p>
@@ -95,6 +101,37 @@
                             Train Writing Skills
                         </button>
                     </div>
+                    @if($book->records->count())
+                    <div id="audioPlayerWrapper" class="fixed bottom-0 left-0 w-full bg-white dark:bg-slate-800 shadow-lg border-t border-slate-200 dark:border-slate-600 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center space-x-4">
+            {{-- Book Cover --}}
+            <img src="{{ asset('storage/'.$book->cover) }}" alt="{{ $book->title }}" class="w-16 h-16 rounded-lg object-cover" onerror="this.src='{{ asset('images/placeholder-book.jpg') }}'">
+
+            {{-- Book Info --}}
+            <div class="flex-1 min-w-0">
+                <p class="text-sm text-orange-500 font-semibold truncate">Audible</p>
+                <h3 class="text-md font-semibold text-slate-800 dark:text-slate-50 truncate">{{ $book->title }}</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400 truncate">{{ $book->author->name ?? 'Unknown Author' }}</p>
+            </div>
+
+            {{-- Audio Controls --}}
+            <audio id="bookAudio" class="w-1/2" controls preload="metadata">
+                @foreach($book->records as $record)
+                    <source src="{{ asset('storage/'.$record->record_file) }}" type="audio/mpeg">
+                @endforeach
+                Your browser does not support the audio element.
+            </audio>
+
+            {{-- Play/Pause Button (Optional JS enhancement) --}}
+            <button id="toggleAudio" class="ml-4 bg-orange-500 hover:bg-orange-600 text-white rounded-full w-12 h-12 flex items-center justify-center">
+                <svg id="playIcon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-6.518-3.76A1 1 0 007 8.293v7.414a1 1 0 001.234.97l6.518-1.887a1 1 0 000-1.878z"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+                    @endif
                 </div>
             </div>
         </div>
@@ -188,7 +225,24 @@ const trainUrl = @json(route('books.train', $book->id));
 const saveUrl  = @json(route('books.training_sessions.store', $book->id));
 const csrfToken = @json(csrf_token());
 const isAuth = @json(auth()->check());
+@if($book->records->count())
+ <script>
+        const audio = document.getElementById('bookAudio');
+        const toggleBtn = document.getElementById('toggleAudio');
+        const playIcon = document.getElementById('playIcon');
 
+        toggleBtn.addEventListener('click', () => {
+            if(audio.paused){
+                audio.play();
+                playIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>`; // Pause icon
+            } else {
+                audio.pause();
+                playIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-6.518-3.76A1 1 0 007 8.293v7.414a1 1 0 001.234.97l6.518-1.887a1 1 0 000-1.878z"/>`; // Play icon
+            }
+        });
+    </script>
+
+@endif
 /* ------------------- 📖 PDF.js Viewer ------------------- */
 let pdfDoc = null;
 let currentPage = 0;

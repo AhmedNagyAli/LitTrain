@@ -55,3 +55,13 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/sessions', [UserProfileController::class, 'sessions'])->name('sessions');
     });
 });
+
+
+Route::get('/php-version', function () {
+    return [
+        'php_version' => PHP_VERSION,
+        'ini_file' => php_ini_loaded_file(),
+        'upload_max_filesize' => ini_get('upload_max_filesize'),
+        'post_max_size' => ini_get('post_max_size'),
+    ];
+});

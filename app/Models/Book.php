@@ -49,6 +49,10 @@ class Book extends Model
     {
         return $this->hasMany(BookRating::class);
     }
+    public function records()
+    {
+        return $this->hasMany(BookRecord::class);
+    }
     public function getStatusLabelAttribute()
     {
         return [

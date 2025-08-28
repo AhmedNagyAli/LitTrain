@@ -11,6 +11,10 @@ class HomeController extends Controller
 {
     public function index(Request $request)
 {
+    //dd(PHP_VERSION);
+
+    //dd(ini_get('upload_max_filesize'), ini_get('post_max_size'));
+
     $selectedCategory = $request->get('category', 'latest');
     $selectedLanguage = $request->get('language_id');
     $languages = Language::all();
