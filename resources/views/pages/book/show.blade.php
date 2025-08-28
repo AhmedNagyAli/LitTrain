@@ -11,6 +11,7 @@
     .correct { background-color: #bbf7d0; }
     .wrong { background-color: #fecaca; }
     #trainingText { word-break: break-word; }
+    .page-block { border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 1rem; margin-bottom: 1.5rem; }
 </style>
 @endpush
 
@@ -60,7 +61,6 @@
 
                     {{-- Buttons --}}
                     <div class="flex flex-wrap gap-4">
-                        {{-- Download --}}
                         @if($book->file)
                         <a href="{{ asset('storage/'.$book->file) }}" download
                            class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition flex items-center">
@@ -68,18 +68,11 @@
                         </a>
                         @endif
 
-                        {{-- Read --}}
                         <button onclick="toggleReading()"
                                 class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition">
                             Read Online
                         </button>
 
-                        {{-- Voice --}}
-                        <button class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium transition">
-                            Publish Voice Record
-                        </button>
-
-                        {{-- Train --}}
                         <button id="trainBtn" onclick="startTraining({{ $book->id }}, '{{ $book->language->code }}')"
                                 class="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg font-medium transition">
                             Train Writing Skills
@@ -89,36 +82,29 @@
             </div>
         </div>
 
-        {{-- Reading + Training Section --}}
+        {{-- Training Section --}}
         @if($book->file)
         <div id="readingSection" class="mt-8 bg-white rounded-lg shadow-lg p-6 hidden">
-            <h2 id="sectionTitle" class="text-2xl font-bold mb-4">Reading: {{ $book->title }}</h2>
+            <h2 id="sectionTitle" class="text-2xl font-bold mb-4">Train Writing Skills</h2>
 
-            <div id="readingContent">
-                <iframe src="{{ route('book.view', $book->id) }}" class="w-full h-[800px] border-0"></iframe>
-            </div>
+            <div id="trainingContent">
+                <div id="trainingPages"></div>
 
-            <div id="trainingContent" class="hidden">
-                {{-- Options --}}
-                <div class="flex gap-4 mb-4">
-                    <label>Start Page:
-                        <input id="startPage" type="number" value="1" min="1" class="border px-2 py-1 rounded w-20">
-                    </label>
-                    <label>Pages:
-                        <input id="numPages" type="number" value="1" min="1" class="border px-2 py-1 rounded w-20">
-                    </label>
-                </div>
-
-                <div id="trainingText" class="mb-6 text-lg leading-relaxed"></div>
-
+                {{-- Stats --}}
                 <div class="mt-4 space-y-1">
                     <p><strong>Words Typed:</strong> <span id="typed-count">0</span></p>
                     <p><strong>Speed:</strong> <span id="speed">0</span> words/sec</p>
                     <p><strong>Accuracy:</strong> <span id="accuracy">0</span>%</p>
                 </div>
 
-                <button id="finishTraining" class="mt-6 bg-green-600 text-white px-4 py-2 rounded-lg hidden">
-                    Finish Training
+                {{-- Always visible end session --}}
+                <button id="finishTraining" class="mt-6 bg-green-600 text-white px-4 py-2 rounded-lg">
+                    End Training
+                </button>
+
+                {{-- Load More --}}
+                <button id="loadMore" class="mt-6 bg-gray-600 text-white px-4 py-2 rounded-lg hidden">
+                    Load More Pages
                 </button>
             </div>
         </div>
@@ -135,11 +121,15 @@ const saveUrl  = @json(route('books.training_sessions.store', $book->id));
 const csrfToken = @json(csrf_token());
 const isAuth = @json(auth()->check());
 
+let currentPage = 1;
+let words = [];
+let currentIndex = 0;
+let buffer = '';
+let startedAt = null;
+let typedCorrect = 0;
+
 function toggleReading() {
     document.getElementById('readingSection').classList.toggle('hidden');
-    document.getElementById('trainingContent').classList.add('hidden');
-    document.getElementById('readingContent').classList.remove('hidden');
-    document.getElementById('sectionTitle').innerText = "Reading: {{ $book->title }}";
 }
 
 function startTraining(bookId, langCode) {
@@ -148,76 +138,116 @@ function startTraining(bookId, langCode) {
         return;
     }
     if (!isAuth) {
-        Swal.fire({
-            title: 'Login Required',
-            text: 'You must login first to train your writing skills.',
-            icon: 'warning',
-            confirmButtonText: 'Go to Login'
-        }).then(() => window.location.href = "{{ route('login') }}");
+        Swal.fire({ title: 'Login Required', text: 'You must login first.', icon: 'warning' })
+            .then(() => window.location.href = "{{ route('login') }}");
         return;
     }
 
-    const section = document.getElementById('readingSection');
-    section.classList.remove('hidden');
-    document.getElementById('readingContent').classList.add('hidden');
-    document.getElementById('trainingContent').classList.remove('hidden');
-    document.getElementById('sectionTitle').innerText = "Train Your Writing Skills";
+    document.getElementById('readingSection').classList.remove('hidden');
+    loadPages(5); // load first 5 pages
+}
 
-    const startPage = document.getElementById('startPage').value;
-    const numPages = document.getElementById('numPages').value;
-
-    fetch(`${trainUrl}?start=${startPage}&pages=${numPages}`, { headers: { 'Accept': 'application/json' } })
+function loadPages(count) {
+    fetch(`${trainUrl}?start=${currentPage}&pages=${count}`, { headers: { 'Accept': 'application/json' } })
         .then(res => res.json())
         .then(data => {
-            if (!data.text) { Swal.fire('Error','No text returned','error'); return; }
-            const words = data.text.trim().split(/\s+/);
-            const trainingText = document.getElementById('trainingText');
-            trainingText.innerHTML = words.map((w, i) =>
-                `<span id="word-${i}" class="word ${i===0?'current':''}" data-word="${escapeHtml(w)}">${escapeHtml(w)}</span>`
-            ).join(' ');
+            if (!data.text) return;
 
-            let currentIndex=0, buffer='', startedAt=null, typedCorrect=0, totalWords=words.length;
+            const container = document.getElementById('trainingPages');
+            const pageBlock = document.createElement('div');
+            pageBlock.className = "page-block";
 
-            function normalize(s){return (s||'').replace(/[.,!?;:()"'“”«»\[\]{}—–…<>\/\\-]/g,'').toLowerCase();}
+            // split into words and wrap spans
+            const splitWords = data.text.trim().split(/\s+/).map(w => `<span class="word">${w}</span>`).join(' ');
 
-            function handler(e){
-                if (e.ctrlKey||e.metaKey||e.altKey) return;
-                if(!startedAt) startedAt=Date.now();
-                if(e.key===' '){
-                    e.preventDefault();
-                    const el=document.getElementById('word-'+currentIndex);
-                    if(!el) return;
-                    if(normalize(buffer)===normalize(el.dataset.word)){ el.classList.add('correct'); typedCorrect++; }
-                    else el.classList.add('wrong');
-                    el.classList.remove('current');
-                    buffer=''; currentIndex++;
-                    if(currentIndex<totalWords) document.getElementById('word-'+currentIndex)?.classList.add('current');
-                    else { document.removeEventListener('keydown',handler); document.getElementById('finishTraining').classList.remove('hidden'); }
-                    updateStats();
-                } else if(e.key==='Backspace'){ buffer=buffer.slice(0,-1); }
-                else if(e.key.length===1){ buffer+=e.key; }
-            }
-            function updateStats(){
-                const time=(Date.now()-startedAt)/1000;
-                document.getElementById('typed-count').textContent=typedCorrect;
-                document.getElementById('speed').textContent=(typedCorrect/Math.max(1,time)).toFixed(2);
-                document.getElementById('accuracy').textContent=(currentIndex?typedCorrect/currentIndex*100:0).toFixed(1);
-            }
-            document.removeEventListener('keydown',handler); document.addEventListener('keydown',handler);
+            pageBlock.innerHTML = `
+                <div class="mb-4">
+                    <button class="bg-blue-500 hover:bg-blue-600 text-white rounded px-3 py-1 text-sm"
+                            onclick="startFromHere(${words.length})">
+                        Start From This Page
+                    </button>
+                </div>
+                <div>${splitWords}</div>
+            `;
 
-            document.getElementById('finishTraining').onclick=function(){
-                const endedAt=Date.now(); const duration=Math.round((endedAt-startedAt)/1000);
-                const accuracy=(typedCorrect/totalWords*100).toFixed(2);
-                const rank=(typedCorrect/duration).toFixed(2);
-                fetch(saveUrl,{
-                    method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':csrfToken},body:JSON.stringify({
-                        duration,accuracy,rank,words_trained:totalWords,started_at:new Date(startedAt).toISOString(),ended_at:new Date(endedAt).toISOString()
-                    })
-                }).then(r=>r.json()).then(()=>{Swal.fire('Saved','Training session recorded!','success').then(()=>location.reload());});
-            };
+            container.appendChild(pageBlock);
+
+            const newWords = data.text.trim().split(/\s+/);
+            words = words.concat(newWords);
+
+            currentPage += count;
+            document.getElementById('loadMore').classList.remove('hidden');
         });
 }
 
-function escapeHtml(text){return text.replace(/[&<>"'`=\/]/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','/':'&#x2F;','`':'&#x60;','=':'&#x3D;'}[s]));}
+
+function startFromHere(index) {
+    currentIndex = index;
+    buffer = '';
+    startedAt = Date.now(); // start immediately
+    typedCorrect = 0;
+
+    // reset stats visually
+    document.getElementById('typed-count').textContent = 0;
+    document.getElementById('speed').textContent = 0;
+    document.getElementById('accuracy').textContent = 0;
+
+    // clear old highlights
+    document.querySelectorAll('.word').forEach(w => w.classList.remove('current','correct','wrong'));
+
+    highlightCurrent();
+
+    // enable typing handler
+    document.removeEventListener('keydown', handler); // avoid duplicate binding
+    document.addEventListener('keydown', handler);
+
+    Swal.fire('Training Started', 'Begin typing to practice from this page.', 'success');
+}
+
+function handler(e) {
+    if (e.ctrlKey||e.metaKey||e.altKey) return;
+    if(!startedAt) startedAt=Date.now();
+
+    if(e.key===' '){
+        e.preventDefault();
+        const expected = words[currentIndex] || '';
+        const currentWordEl = document.querySelectorAll('.word')[currentIndex];
+        if(normalize(buffer)===normalize(expected)){
+            typedCorrect++;
+            currentWordEl.classList.add('correct');
+        } else {
+            currentWordEl.classList.add('wrong');
+        }
+        currentWordEl.classList.remove('current');
+        currentIndex++;
+        buffer='';
+        highlightCurrent();
+        updateStats();
+    } else if(e.key==='Backspace'){ buffer=buffer.slice(0,-1); }
+    else if(e.key.length===1){ buffer+=e.key; }
+}
+
+function highlightCurrent(){
+    const wordEls = document.querySelectorAll('.word');
+    wordEls.forEach(w => w.classList.remove('current'));
+    if(wordEls[currentIndex]) wordEls[currentIndex].classList.add('current');
+}
+
+function updateStats(){
+    const time=(Date.now()-startedAt)/1000;
+    document.getElementById('typed-count').textContent=typedCorrect;
+    document.getElementById('speed').textContent=(typedCorrect/Math.max(1,time)).toFixed(2);
+    document.getElementById('accuracy').textContent=(currentIndex?typedCorrect/currentIndex*100:0).toFixed(1);
+}
+
+document.getElementById('finishTraining').onclick=function(){
+    Swal.fire('Session Ended','Your training session has ended.','success');
+};
+
+document.getElementById('loadMore').onclick=function(){
+    loadPages(5);
+};
+
+function normalize(s){return (s||'').replace(/[.,!?;:()"'“”«»\[\]{}—–…<>\/\\-]/g,'').toLowerCase();}
 </script>
 @endpush
