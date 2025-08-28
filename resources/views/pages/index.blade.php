@@ -7,17 +7,19 @@
 @section('content')
 <div class="container mx-auto px-4 py-6">
 
-    {{-- 🔹 Featured Books Carousel --}}
+    {{-- 🔹 Featured Books Carousel (only show if no language filter) --}}
+@if(!$selectedLanguage && $featuredBooks && $featuredBooks->count())
     <div class="relative">
         <div id="featured-carousel" class="flex overflow-x-auto space-x-4 pb-4 scrollbar-hide">
             @foreach ($featuredBooks as $book)
                 <div class="min-w-[200px] max-w-[200px] flex-shrink-0">
-    @component('components.book-card', ['book' => $book, 'featured' => true])
-    @endcomponent
-</div>
-
+                    @component('components.book-card', ['book' => $book, 'featured' => true])
+                    @endcomponent
+                </div>
             @endforeach
         </div>
+    </div>
+@endif
 
         {{-- Left & Right Arrows --}}
         <button onclick="scrollCarousel('left')" class="absolute left-0 top-1/2 -translate-y-1/2 bg-gray-800 text-white p-2 rounded-full">‹</button>
