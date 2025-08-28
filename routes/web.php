@@ -32,6 +32,7 @@ Route::get('/books/{id}/view', [BookController::class, 'view'])->name('book.view
 
 Route::get('/books/{book}/train', [BookController::class, 'train'])->name('books.train');
 // Save training session; require auth in controller or middleware
+
 Route::post('/books/{book}/training-sessions', [TrainingSessionController::class, 'store'])
-     ->name('books.training_sessions.store')
-     ->middleware('auth');
+    ->name('books.training_sessions.store')
+    ->middleware('auth');

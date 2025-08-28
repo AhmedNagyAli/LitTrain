@@ -12,6 +12,23 @@
     .wrong { background-color: #fecaca; }
     #trainingText { word-break: break-word; }
     .page-block { border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 1rem; margin-bottom: 1.5rem; }
+
+    /* 📖 PDF Viewer */
+    #pdf-viewer {
+        width: 100%;
+        height: auto;
+        max-height: 85vh;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        padding: 10px;
+    }
+    canvas {
+        display: block;
+        margin: 0 auto 20px auto;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+    }
 </style>
 @endpush
 
@@ -68,7 +85,7 @@
                         </a>
                         @endif
 
-                        <button onclick="toggleReading()"
+                        <button onclick="openPdf()"
                                 class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition">
                             Read Online
                         </button>
@@ -81,6 +98,20 @@
                 </div>
             </div>
         </div>
+
+        {{-- 📖 PDF Viewer Section --}}
+        @if($book->file)
+        <div id="pdfSection" class="mt-8 bg-white rounded-lg shadow-lg p-6 hidden">
+            <h2 class="text-2xl font-bold mb-4">Read Online</h2>
+            <div id="pdf-viewer"></div>
+            <div class="text-center mt-4">
+                <button id="load-more"
+                        class="px-4 py-2 bg-gray-700 text-white rounded-lg shadow hover:bg-gray-900">
+                    Load More Pages
+                </button>
+            </div>
+        </div>
+        @endif
 
         {{-- Training Section --}}
         @if($book->file)
@@ -97,12 +128,10 @@
                     <p><strong>Accuracy:</strong> <span id="accuracy">0</span>%</p>
                 </div>
 
-                {{-- Always visible end session --}}
                 <button id="finishTraining" class="mt-6 bg-green-600 text-white px-4 py-2 rounded-lg">
                     End Training
                 </button>
 
-                {{-- Load More --}}
                 <button id="loadMore" class="mt-6 bg-gray-600 text-white px-4 py-2 rounded-lg hidden">
                     Load More Pages
                 </button>
@@ -114,6 +143,8 @@
 @endsection
 
 @push('scripts')
+{{-- ✅ PDF.js --}}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 const trainUrl = @json(route('books.train', $book->id));
@@ -121,20 +152,54 @@ const saveUrl  = @json(route('books.training_sessions.store', $book->id));
 const csrfToken = @json(csrf_token());
 const isAuth = @json(auth()->check());
 
-let currentPage = 1;
+/* ------------------- 📖 PDF.js Viewer ------------------- */
+let pdfDoc = null;
+let currentPage = 0;
+const scale = 1.2;
+
+function openPdf() {
+    document.getElementById("pdfSection").classList.toggle("hidden");
+    if (!pdfDoc) {
+        const url = "{{ asset('storage/'.$book->file) }}";
+        pdfjsLib.getDocument(url).promise.then(function(pdfDoc_) {
+            pdfDoc = pdfDoc_;
+            loadNextPages(3);
+        });
+    }
+}
+
+async function loadNextPages(n) {
+    const pdfViewer = document.getElementById("pdf-viewer");
+    for (let i = 0; i < n; i++) {
+        if (currentPage >= pdfDoc.numPages) {
+            document.getElementById("load-more").disabled = true;
+            document.getElementById("load-more").innerText = "No more pages";
+            break;
+        }
+        currentPage++;
+        const page = await pdfDoc.getPage(currentPage);
+        const viewport = page.getViewport({ scale });
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        await page.render({ canvasContext: context, viewport: viewport }).promise;
+        pdfViewer.appendChild(canvas);
+    }
+}
+document.getElementById("load-more")?.addEventListener("click", () => loadNextPages(3));
+
+/* ------------------- ✍️ Training ------------------- */
+let currentPageTrain = 1;
 let words = [];
 let currentIndex = 0;
 let buffer = '';
 let startedAt = null;
 let typedCorrect = 0;
 
-function toggleReading() {
-    document.getElementById('readingSection').classList.toggle('hidden');
-}
-
 function startTraining(bookId, langCode) {
     if (langCode !== 'en') {
-        Swal.fire('Not Allowed', 'Training works only for English books.', 'warning');
+        Swal.fire('Not Allowed', 'Training works only for English books for now.', 'warning');
         return;
     }
     if (!isAuth) {
@@ -144,22 +209,18 @@ function startTraining(bookId, langCode) {
     }
 
     document.getElementById('readingSection').classList.remove('hidden');
-    loadPages(5); // load first 5 pages
+    loadPages(5);
 }
 
 function loadPages(count) {
-    fetch(`${trainUrl}?start=${currentPage}&pages=${count}`, { headers: { 'Accept': 'application/json' } })
+    fetch(`${trainUrl}?start=${currentPageTrain}&pages=${count}`, { headers: { 'Accept': 'application/json' } })
         .then(res => res.json())
         .then(data => {
             if (!data.text) return;
-
             const container = document.getElementById('trainingPages');
             const pageBlock = document.createElement('div');
             pageBlock.className = "page-block";
-
-            // split into words and wrap spans
             const splitWords = data.text.trim().split(/\s+/).map(w => `<span class="word">${w}</span>`).join(' ');
-
             pageBlock.innerHTML = `
                 <div class="mb-4">
                     <button class="bg-blue-500 hover:bg-blue-600 text-white rounded px-3 py-1 text-sm"
@@ -169,45 +230,32 @@ function loadPages(count) {
                 </div>
                 <div>${splitWords}</div>
             `;
-
             container.appendChild(pageBlock);
-
             const newWords = data.text.trim().split(/\s+/);
             words = words.concat(newWords);
-
-            currentPage += count;
+            currentPageTrain += count;
             document.getElementById('loadMore').classList.remove('hidden');
         });
 }
 
-
 function startFromHere(index) {
     currentIndex = index;
     buffer = '';
-    startedAt = Date.now(); // start immediately
+    startedAt = Date.now();
     typedCorrect = 0;
-
-    // reset stats visually
     document.getElementById('typed-count').textContent = 0;
     document.getElementById('speed').textContent = 0;
     document.getElementById('accuracy').textContent = 0;
-
-    // clear old highlights
     document.querySelectorAll('.word').forEach(w => w.classList.remove('current','correct','wrong'));
-
     highlightCurrent();
-
-    // enable typing handler
-    document.removeEventListener('keydown', handler); // avoid duplicate binding
+    document.removeEventListener('keydown', handler);
     document.addEventListener('keydown', handler);
-
     Swal.fire('Training Started', 'Begin typing to practice from this page.', 'success');
 }
 
 function handler(e) {
     if (e.ctrlKey||e.metaKey||e.altKey) return;
     if(!startedAt) startedAt=Date.now();
-
     if(e.key===' '){
         e.preventDefault();
         const expected = words[currentIndex] || '';
@@ -240,13 +288,71 @@ function updateStats(){
     document.getElementById('accuracy').textContent=(currentIndex?typedCorrect/currentIndex*100:0).toFixed(1);
 }
 
+/* ------------------- ✅ End Training -> Save Session ------------------- */
 document.getElementById('finishTraining').onclick=function(){
+    const endedAt = Date.now();
+    const duration = Math.floor((endedAt - startedAt)/1000);
+    const accuracy = currentIndex ? (typedCorrect/currentIndex*100).toFixed(1) : 0;
+    const rank = accuracy >= 90 ? 'Expert' : accuracy >= 70 ? 'Intermediate' : 'Beginner';
+
     Swal.fire('Session Ended','Your training session has ended.','success');
+
+    if(!isAuth) return;
+
+    fetch(saveUrl, {
+        method: "POST",
+        headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+    },
+        body: JSON.stringify({
+            duration: duration,
+            accuracy: accuracy,
+            rank: rank,
+            words_trained: currentIndex,
+            started_at: new Date(startedAt).toISOString(),
+            ended_at: new Date(endedAt).toISOString()
+        })
+    })
+    .then(response => response.json()) // ✅ This now works because we return JSON
+.then(data => {
+    if (data.success) {
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'success',
+            title: data.message,
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true
+        });
+    } else {
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'error',
+            title: "❌ Failed: " + data.message,
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true
+        });
+    }
+})
+.catch(error => {
+    console.error("❌ Error saving session:", error);
+    Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'error',
+        title: "Error saving session",
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true
+    });
+});
 };
 
-document.getElementById('loadMore').onclick=function(){
-    loadPages(5);
-};
+document.getElementById('loadMore').onclick=function(){ loadPages(5); };
 
 function normalize(s){return (s||'').replace(/[.,!?;:()"'“”«»\[\]{}—–…<>\/\\-]/g,'').toLowerCase();}
 </script>
