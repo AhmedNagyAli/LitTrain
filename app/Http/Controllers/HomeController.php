@@ -25,7 +25,12 @@ class HomeController extends Controller
     }
 
     // All categories
-    $categories = Category::paginate(5);
+    // $categories = Category::withCount('books')
+    // ->orderByDesc('books_count') // highest number of books first
+    // ->paginate(7);
+     $categories = Category::withCount('books')
+        ->orderBy('books_count', 'desc')
+        ->paginate(7);
 
     // Books query
     $booksQuery = Book::with('author', 'publisher', 'language')

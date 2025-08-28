@@ -21,7 +21,8 @@ class BookController extends Controller
         })
         ->where('id', '!=', $book->id)
         ->with(['author', 'categories'])
-        ->paginate(4);
+        ->paginate(5);
+        //dd($relatedBooks);
 
 
         return view('pages.book.show', compact('book', 'relatedBooks'));

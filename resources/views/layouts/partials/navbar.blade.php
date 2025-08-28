@@ -14,23 +14,29 @@
                 </a>
 
                 <!-- Language Dropdown -->
-                <form action="{{ route('home.index') }}" method="GET">
-                    <select name="language_id" onchange="this.form.submit()"
-                        class="border-gray-300 rounded-md text-sm px-2 py-1 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                        <option value="">All Languages</option>
-                        @foreach($languages as $language)
-                            <option value="{{ $language->id }}"
-                                {{ request('language_id') == $language->id ? 'selected' : '' }}>
-                                {{ $language->name }}
-                            </option>
-                        @endforeach
-                    </select>
+<form action="{{ route('home.index') }}" method="GET" class="inline-block">
+    <label for="language_id" class="block text-gray-700 font-medium mb-1">
 
-                    {{-- Keep category filter when switching languages --}}
-                    @if(request('category'))
-                        <input type="hidden" name="category" value="{{ request('category') }}">
-                    @endif
-                </form>
+    </label>
+    <select name="language_id" id="language_id"
+        onchange="this.form.submit()"
+        class="bg-transparent text-sm ">
+        <option value="">All Languages</option>
+        @foreach(\App\Models\Language::all() as $language)
+    <option value="{{ $language->id }}"
+        {{ request('language_id') == $language->id ? 'selected' : '' }}>
+        {{ $language->name }}
+    </option>
+@endforeach
+    </select>
+
+    {{-- Keep category filter when switching languages --}}
+    @if(request('category'))
+        <input type="hidden" name="category" value="{{ request('category') }}">
+    @endif
+</form>
+
+
 
                 <!-- Become a Publisher -->
                 <a href="{{ route('publishing.request.create') }}"

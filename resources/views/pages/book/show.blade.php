@@ -80,29 +80,66 @@
                     <div class="flex flex-wrap gap-4">
                         @if($book->file)
                         <a href="{{ asset('storage/'.$book->file) }}" download
-                           class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition flex items-center">
+                           class="bg-indigo-900 hover:bg-indigo-600 text-white px-6 py-2 rounded-lg font-medium transition flex items-center">
                             Download PDF
                         </a>
                         @endif
 
                         <button onclick="openPdf()"
-                                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition">
+                                class="bg-violet-700 hover:bg-violet-600 text-white px-6 py-2 rounded-lg font-medium transition">
                             Read Online
                         </button>
 
                         <button id="trainBtn" onclick="startTraining({{ $book->id }}, '{{ $book->language->code }}')"
-                                class="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg font-medium transition">
+                                class="bg-purple-700 hover:bg-purple-600 text-white px-6 py-2 rounded-lg font-medium transition">
                             Train Writing Skills
                         </button>
                     </div>
                 </div>
             </div>
         </div>
+        {{-- 🔹 Suggested Books --}}
+@if($relatedBooks->count())
+<div class="mt-12">
+    <h2 class="text-2xl font-bold text-gray-800 mb-6">You may also like</h2>
+
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        @foreach($relatedBooks as $related)
+            <div class="bg-white rounded-lg shadow hover:shadow-lg transition overflow-hidden">
+                <a href="{{ route('books.show', $related->id) }}">
+                    <img src="{{ asset('storage/'.$related->cover) }}"
+                         alt="{{ $related->title }}"
+                         class="w-full h-48 object-cover"
+                         onerror="this.src='{{ asset('images/placeholder-book.jpg') }}'">
+                </a>
+                <div class="p-4">
+                    <h3 class="text-lg font-semibold text-gray-800 truncate">
+                        <a href="{{ route('books.show', $related->id) }}" class="hover:text-indigo-600">
+                            {{ $related->title }}
+                        </a>
+                    </h3>
+                    <p class="text-sm text-gray-500">
+                        {{ $related->author->name ?? 'Unknown Author' }}
+                    </p>
+                    <div class="flex flex-wrap gap-1 mt-2">
+                        @foreach($related->categories->take(2) as $cat)
+                            <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">
+                                {{ $cat->category }}
+                            </span>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        @endforeach
+    </div>
+</div>
+@endif
+
 
         {{-- 📖 PDF Viewer Section --}}
         @if($book->file)
         <div id="pdfSection" class="mt-8 bg-white rounded-lg shadow-lg p-6 hidden">
-            <h2 class="text-2xl font-bold mb-4">Read Online</h2>
+            <h2 class="text-2xl font-bold mb-4">{{ $book->title ?? 'Read online' }}</h2>
             <div id="pdf-viewer"></div>
             <div class="text-center mt-4">
                 <button id="load-more"
