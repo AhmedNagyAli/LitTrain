@@ -9,6 +9,7 @@
 <body class="bg-gray-100">
 
     @include('layouts.partials.navbar')
+    
 
     <main class="min-h-screen">
         @yield('content')

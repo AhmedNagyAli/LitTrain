@@ -1,96 +1,104 @@
 <!-- Navbar -->
 <nav class="bg-white shadow sticky top-0 z-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-            <!-- Logo and main navigation -->
-            <div class="flex items-center">
+        <div class="flex justify-between h-16 items-center">
+
+            <!-- Left Section -->
+            <div class="flex items-center space-x-6">
                 <!-- Logo -->
-                <a href="/" class="flex-shrink-0 flex items-center">
+                <a href="/" class="flex items-center space-x-2">
                     <div class="h-8 w-8 bg-gradient-to-r from-indigo-600 to-purple-500 rounded-md flex items-center justify-center">
                         <i class="fas fa-book-open text-white text-sm"></i>
                     </div>
-                    <span class="ml-2 text-xl font-bold text-gray-900">LitTrain</span>
+                    <span class="text-xl font-bold text-gray-900">LitTrain</span>
                 </a>
 
-                <!-- Navigation Links -->
-                <div class="hidden md:ml-10 md:flex md:space-x-8">
-                    <a href="#" class="text-gray-800 hover:text-indigo-600 px-3 py-2 text-sm font-medium transition duration-150">Discover</a>
-                    <a href="#" class="text-gray-800 hover:text-indigo-600 px-3 py-2 text-sm font-medium transition duration-150">My Library</a>
-                    <a href="#" class="text-gray-800 hover:text-indigo-600 px-3 py-2 text-sm font-medium transition duration-150">Writing Exercises</a>
-                    <a href="#" class="text-gray-800 hover:text-indigo-600 px-3 py-2 text-sm font-medium transition duration-150">Community</a>
-                </div>
+                <!-- Language Dropdown -->
+<form action="{{ route('home.index') }}" method="GET" class="inline-block">
+    <label for="language_id" class="block text-gray-700 font-medium mb-1">
+
+    </label>
+    <select name="language_id" id="language_id"
+        onchange="this.form.submit()"
+        class="bg-transparent text-sm ">
+        <option value="">All Languages</option>
+        @foreach(\App\Models\Language::all() as $language)
+    <option value="{{ $language->id }}"
+        {{ request('language_id') == $language->id ? 'selected' : '' }}>
+        {{ $language->name }}
+    </option>
+@endforeach
+    </select>
+
+    {{-- Keep category filter when switching languages --}}
+    @if(request('category'))
+        <input type="hidden" name="category" value="{{ request('category') }}">
+    @endif
+</form>
+
+
+
+                <!-- Become a Publisher -->
+                <a href="{{ route('publishing.request.create') }}"
+                   class="text-gray-600 hover:text-indigo-600 text-sm font-medium transition">
+                    Become a Publisher
+                </a>
             </div>
 
-            <!-- Right section -->
-            <div class="flex items-center">
+            <!-- Right Section -->
+            <div class="flex items-center space-x-4">
                 @auth
-                    <!-- If user is logged in -->
-                    <div class="hidden md:ml-4 md:flex md:items-center">
-                        <div class="ml-3 relative">
-                            <div>
-                                <button class="max-w-xs flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-400" id="user-menu-button">
-                                    <span class="sr-only">Open user menu</span>
-                                    @if(Auth::user()->avatar)
-                                        <!-- Show user uploaded avatar -->
-                                        <img class="h-8 w-8 rounded-full" src="{{ Auth::user()->avatar }}" alt="{{ Auth::user()->name }}">
-                                    @else
-                                        <!-- Fallback: initials -->
-                                        <div class="h-8 w-8 rounded-full bg-gradient-to-r from-indigo-600 to-purple-500 flex items-center justify-center text-white text-xs font-semibold">
-                                            {{ strtoupper(substr(Auth::user()->name, 0, 2)) }}
-                                        </div>
-                                    @endif
-                                    <span class="ml-2 text-gray-700 text-sm font-medium hidden lg:inline">{{ Auth::user()->name }}</span>
-                                    <i class="fas fa-chevron-down ml-1 text-gray-400 text-xs"></i>
-                                </button>
-                            </div>
-                        </div>
+                    <!-- Avatar Dropdown -->
+                    <div class="relative" x-data="{ open: false }">
+                        <button @click="open = !open"
+                            class="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            @if(Auth::user()->avatar)
+                                <img class="h-9 w-9 rounded-full border border-gray-200"
+                                     src="{{ Auth::user()->avatar }}" alt="{{ Auth::user()->name }}">
+                            @else
+                                <div class="h-9 w-9 rounded-full bg-gradient-to-r from-indigo-600 to-purple-500 flex items-center justify-center text-white text-xs font-semibold">
+                                    {{ strtoupper(substr(Auth::user()->name, 0, 2)) }}
+                                </div>
+                            @endif
+                        </button>
+
+                        <!-- Dropdown Menu -->
+<div x-show="open" @click.outside="open = false"
+     class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-2 z-50">
+
+    <a href="{{ route('user.dashboard') }}"
+       class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Dashboard</a>
+
+    <a href="{{ route('user.profile') }}"
+       class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profile</a>
+
+    <a href="{{ route('user.books') }}"
+       class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">My Books</a>
+
+    <a href="{{ route('user.sessions') }}"
+       class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Training Sessions</a>
+
+    <form method="POST" action="{{ route('logout') }}">
+        @csrf
+        <button type="submit"
+            class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+            Logout
+        </button>
+    </form>
+</div>
                     </div>
                 @endauth
 
                 @guest
-                    <!-- If not logged in -->
-                    <a href="{{ route('login') }}" class="ml-4 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-purple-500 transition">
+                    <a href="{{ route('login') }}"
+                       class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-purple-500 transition">
                         Login
                     </a>
                 @endguest
-
-                <!-- Mobile menu button -->
-                <div class="-mr-2 flex items-center md:hidden">
-                    <button type="button" id="mobile-menu-button" class="bg-white inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-400">
-                        <span class="sr-only">Open main menu</span>
-                        <i class="fas fa-bars h-6 w-6"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Mobile menu, show/hide based on menu state -->
-    <div class="md:hidden hidden menu-transition" id="mobile-menu">
-        <div class="pt-2 pb-3 space-y-1">
-            <a href="#" class="bg-gray-100 text-indigo-600 block pl-3 pr-4 py-2 border-l-4 border-indigo-600 text-base font-medium">Discover</a>
-            <a href="#" class="text-gray-800 hover:bg-gray-50 hover:text-indigo-600 block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium">My Library</a>
-            <a href="#" class="text-gray-800 hover:bg-gray-50 hover:text-indigo-600 block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium">Writing Exercises</a>
-            <a href="#" class="text-gray-800 hover:bg-gray-50 hover:text-indigo-600 block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium">Community</a>
-        </div>
-        <div class="pt-4 pb-3 border-t border-gray-200">
-            <div class="flex items-center px-4">
-                <div class="flex-shrink-0">
-                    <div class="h-10 w-10 rounded-full bg-gradient-to-r from-indigo-600 to-purple-500 flex items-center justify-center text-white font-semibold">
-                        JS
-                    </div>
-                </div>
-                <div class="ml-3">
-                    <div class="text-base font-medium text-gray-800">John Smith</div>
-                    <div class="text-sm font-medium text-gray-500">john@example.com</div>
-                </div>
-            </div>
-            <div class="mt-3 space-y-1">
-                <a href="#" class="block px-4 py-2 text-base font-medium text-gray-800 hover:text-gray-800 hover:bg-gray-100">Profile</a>
-                <a href="#" class="block px-4 py-2 text-base font-medium text-gray-800 hover:text-gray-800 hover:bg-gray-100">My Writings</a>
-                <a href="#" class="block px-4 py-2 text-base font-medium text-gray-800 hover:text-gray-800 hover:bg-gray-100">Settings</a>
-                <a href="#" class="block px-4 py-2 text-base font-medium text-gray-800 hover:text-gray-800 hover:bg-gray-100">Sign out</a>
             </div>
         </div>
     </div>
 </nav>
+
+<!-- Alpine.js (needed for dropdown toggle) -->
+<script src="//unpkg.com/alpinejs" defer></script>

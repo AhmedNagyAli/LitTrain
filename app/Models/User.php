@@ -9,8 +9,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Filament\Panel;
-
-class User extends Authenticatable
+use Filament\Models\Contracts\FilamentUser;
+class User extends Authenticatable implements FilamentUser
 {
     use Notifiable;
 
@@ -53,12 +53,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(TrainingSession::class);
     }
-    public function isAdmin(): bool
-{
-    return in_array($this->role->value ?? $this->role, ['admin']);
-}
+
     public function canAccessPanel(Panel $panel): bool
     {
-        return $this->isAdmin();
+        return $this->role === UserRole::Admin;
     }
 }

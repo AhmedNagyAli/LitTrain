@@ -21,7 +21,8 @@ class BookController extends Controller
         })
         ->where('id', '!=', $book->id)
         ->with(['author', 'categories'])
-        ->paginate(4);
+        ->paginate(5);
+        //dd($relatedBooks);
 
 
         return view('pages.book.show', compact('book', 'relatedBooks'));
@@ -60,34 +61,29 @@ public function view($id)
 
 public function train(Book $book, Request $request)
 {
-    // file path — adjust if you store files elsewhere
-    $filePath = public_path('storage/' . $book->file);
-
-    if (!file_exists($filePath)) {
-        return response()->json(['error' => 'file_not_found'], 404);
+    if ($book->language->code !== 'en') {
+        return response()->json(['error' => 'not_allowed'], 403);
     }
 
-    try {
-        $parser = new Parser();
-        $pdf = $parser->parseFile($filePath);
-        $pages = $pdf->getPages();
+    $start = max(1, (int)$request->query('start', 1));
+    $pagesCount = max(1, (int)$request->query('pages', 1));
 
-        if (count($pages) > 0) {
-            $text = trim($pages[0]->getText());
-        } else {
-            // fallback: whole text
-            $text = trim($pdf->getText());
-        }
+    $filePath = public_path('storage/'.$book->file);
+    if (!file_exists($filePath)) return response()->json(['error'=>'file_not_found'],404);
 
-        // normalize whitespace
-        $text = preg_replace('/\s+/', ' ', $text);
+    $parser = new Parser();
+    $pdf = $parser->parseFile($filePath);
+    $pages = $pdf->getPages();
 
-        return response()->json(['text' => $text]);
-    } catch (\Exception $e) {
-        // return helpful error for debugging (remove message in production)
-        return response()->json(['error' => 'parse_error', 'message' => $e->getMessage()], 500);
+    $text = '';
+    for ($i=$start-1; $i < min(count($pages), $start-1+$pagesCount); $i++) {
+        $text .= " " . $pages[$i]->getText();
     }
+
+    $text = preg_replace('/\s+/', ' ', trim($text));
+    return response()->json(['text'=>$text]);
 }
+
 
 
 

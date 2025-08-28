@@ -12,17 +12,13 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 class AuthController extends Controller
 {
-    /**
-     * Show login form.
-     */
+    // Show login page
     public function showLogin()
     {
         return view('auth.login');
     }
 
-    /**
-     * Handle login.
-     */
+    // Handle login
     public function login(Request $request)
     {
         $credentials = $request->validate([
@@ -31,96 +27,46 @@ class AuthController extends Controller
         ]);
 
         if (Auth::attempt($credentials, $request->filled('remember'))) {
-            $user = Auth::user();
-
-            // if (!$user->is_email_verified) {
-            //     Auth::logout();
-            //     return back()->withErrors(['email' => 'Please verify your email before logging in.']);
-            // }
-
-            return redirect()->route('dashboard')->with('success', 'Welcome back!');
+            $request->session()->regenerate();
+            return redirect()->intended(route('home.index'))->with('success', 'Welcome back!');
         }
 
-        return back()->withErrors(['email' => 'Invalid credentials']);
+        return back()->withErrors(['email' => 'Invalid email or password.']);
     }
 
-    /**
-     * Show registration form.
-     */
+    // Show register page
     public function showRegister()
     {
         return view('auth.register');
     }
 
-    /**
-     * Handle registration.
-     */
+    // Handle registration
     public function register(Request $request)
     {
         $data = $request->validate([
             'name'     => 'required|string|max:255',
             'email'    => 'required|email|unique:users',
-            'phone'    => 'nullable|string|max:20',
-            'password' => 'required|string|min:6|confirmed',
+            'password' => 'required|min:6|confirmed',
         ]);
-
-        $verification_code = Str::random(6);
 
         $user = User::create([
-            'name'               => $data['name'],
-            'email'              => $data['email'],
-            'phone'              => $data['phone'] ?? null,
-            'password'           => Hash::make($data['password']),
-            'verification_code'  => $verification_code,
-            'is_email_verified'  => false,
-            'role'               => 'reader',
+            'name'     => $data['name'],
+            'email'    => $data['email'],
+            'password' => Hash::make($data['password']),
         ]);
 
-        // Send verification email
-        Mail::raw("Your verification code is: $verification_code", function ($message) use ($user) {
-            $message->to($user->email)->subject('Verify Your Email');
-        });
+        Auth::login($user);
 
-        return redirect()->route('auth.verify')->with('success', 'Account created! Please check your email for verification code.');
+        return redirect()->route('home.index')->with('success', 'Account created successfully!');
     }
 
-    /**
-     * Show verification form.
-     */
-    public function showVerify()
-    {
-        return view('auth.verify');
-    }
-
-    /**
-     * Handle email verification.
-     */
-    public function verify(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email',
-            'code'  => 'required|string',
-        ]);
-
-        $user = User::where('email', $request->email)->where('verification_code', $request->code)->first();
-
-        if (!$user) {
-            return back()->withErrors(['code' => 'Invalid verification code.']);
-        }
-
-        $user->is_email_verified = true;
-        $user->verification_code = null;
-        $user->save();
-
-        return redirect()->route('login')->with('success', 'Email verified! You can now log in.');
-    }
-
-    /**
-     * Handle logout.
-     */
-    public function logout()
+    // Handle logout
+    public function logout(Request $request)
     {
         Auth::logout();
-        return redirect()->route('login')->with('success', 'You have been logged out.');
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('home.index')->with('success', 'You have been logged out.');
     }
 }
