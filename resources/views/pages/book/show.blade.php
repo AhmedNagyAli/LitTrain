@@ -102,42 +102,48 @@
                         </button>
                     </div>
                     {{-- 🎧 Records List + Player --}}
-                    @if($book->records->count())
-                        <div class="mt-8">
-                            <h2 class="text-lg font-semibold mb-2">Available Audio Records</h2>
-                            <ul class="space-y-2">
-                                @foreach($book->records as $record)
-                                    <li>
-                                        <button
-                                            class="w-full text-left px-4 py-2 rounded bg-gray-100 hover:bg-orange-100 transition"
-                                            onclick="playRecord('{{ asset('storage/'.$record->record_file) }}', '{{ $record->user->name ?? 'Unknown User' }}')">
-                                            🎤 {{ $record->user->name ?? 'Unknown User' }}
-                                        </button>
-                                    </li>
-                                @endforeach
-                            </ul>
-                        </div>
+                    @if($book->records->where('status', 'approved')->count())
+    <div class="mt-8">
+        <h2 class="text-lg font-semibold mb-2">Available Audio Records</h2>
+        <ul class="space-y-2">
+            @foreach($book->records->where('status', 'approved') as $record)
+                <li>
+                    <button
+                        class="w-full text-left px-4 py-2 rounded bg-gray-100 hover:bg-orange-100 transition"
+                        onclick="playRecord('{{ asset('storage/'.$record->record_file) }}', '{{ $record->user->name ?? 'Unknown User' }}')">
+                        🎤 {{ $record->user->name ?? 'Unknown User' }}
+                        <span class="text-sm text-gray-500 ml-2">({{ $record->duration }}s)</span>
+                    </button>
+                </li>
+            @endforeach
+        </ul>
+    </div>
 
-                        <div id="audioPlayerWrapper" class="fixed bottom-0 left-0 w-full bg-white dark:bg-slate-800 shadow-lg border-t border-slate-200 dark:border-slate-600 z-50">
-                            <div class="max-w-7xl mx-auto px-4 py-3 flex items-center space-x-4">
-                                {{-- Book Cover --}}
-                                <img src="{{ asset('storage/'.$book->cover) }}" alt="{{ $book->title }}" class="w-16 h-16 rounded-lg object-cover" onerror="this.src='{{ asset('images/placeholder-book.jpg') }}'">
+    <div id="audioPlayerWrapper" class="fixed bottom-0 left-0 w-full bg-white dark:bg-slate-800 shadow-lg border-t border-slate-200 dark:border-slate-600 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center space-x-4">
+            {{-- Book Cover --}}
+            <img src="{{ asset('storage/'.$book->cover) }}" alt="{{ $book->title }}"
+                 class="w-16 h-16 rounded-lg object-cover"
+                 onerror="this.src='{{ asset('images/placeholder-book.jpg') }}'">
 
-                                {{-- Book Info --}}
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-sm text-orange-500 font-semibold truncate">Audible</p>
-                                    <h3 id="recordTitle" class="text-md font-semibold text-slate-800 dark:text-slate-50 truncate">{{ $book->title }}</h3>
-                                    <p id="recordUser" class="text-sm text-slate-500 dark:text-slate-400 truncate"></p>
-                                </div>
+            {{-- Book Info --}}
+            <div class="flex-1 min-w-0">
+                <p class="text-sm text-orange-500 font-semibold truncate">Audible</p>
+                <h3 id="recordTitle" class="text-md font-semibold text-slate-800 dark:text-slate-50 truncate">
+                    {{ $book->title }}
+                </h3>
+                <p id="recordUser" class="text-sm text-slate-500 dark:text-slate-400 truncate"></p>
+            </div>
 
-                                {{-- Audio Controls --}}
-                                <audio id="bookAudio" class="w-1/2" controls preload="metadata">
-                                    <source id="audioSource" src="" type="audio/mpeg">
-                                    Your browser does not support the audio element.
-                                </audio>
-                            </div>
-                        </div>
-                    @endif
+            {{-- Audio Controls --}}
+            <audio id="bookAudio" class="w-1/2" controls preload="metadata">
+                <source id="audioSource" src="" type="audio/mpeg">
+                Your browser does not support the audio element.
+            </audio>
+        </div>
+    </div>
+@endif
+
 
                     {{-- 🎤 Record Button --}}
 <div class="mt-6">
@@ -319,7 +325,7 @@ let currentIndex = 0;
 let buffer = '';
 let startedAt = null;
 let typedCorrect = 0;
-
+let typedTotal = 0;
 function startTraining(bookId, langCode) {
     if (langCode !== 'en') {
         Swal.fire('Not Allowed', 'Training works only for English books for now.', 'warning');
@@ -381,6 +387,7 @@ function handler(e) {
     if(!startedAt) startedAt=Date.now();
     if(e.key===' '){
         e.preventDefault();
+        typedTotal++;
         const expected = words[currentIndex] || '';
         const currentWordEl = document.querySelectorAll('.word')[currentIndex];
         if(normalize(buffer)===normalize(expected)){
@@ -406,16 +413,16 @@ function highlightCurrent(){
 
 function updateStats(){
     const time=(Date.now()-startedAt)/1000;
-    document.getElementById('typed-count').textContent=typedCorrect;
-    document.getElementById('speed').textContent=(typedCorrect/Math.max(1,time)).toFixed(2);
-    document.getElementById('accuracy').textContent=(currentIndex?typedCorrect/currentIndex*100:0).toFixed(1);
+    document.getElementById('typed-count').textContent=typedTotal;
+    document.getElementById('speed').textContent=(typedTotal/Math.max(1,time)).toFixed(2);
+    document.getElementById('accuracy').textContent=(typedTotal?typedCorrect/typedTotal*100:0).toFixed(1);
 }
 
 /* ------------------- ✅ End Training -> Save Session ------------------- */
 document.getElementById('finishTraining').onclick=function(){
     const endedAt = Date.now();
     const duration = Math.floor((endedAt - startedAt)/1000);
-    const accuracy = currentIndex ? (typedCorrect/currentIndex*100).toFixed(1) : 0;
+    const accuracy = typedTotal ? (typedCorrect/typedTotal*100).toFixed(1) : 0;
     const rank = accuracy >= 90 ? 'Expert' : accuracy >= 70 ? 'Intermediate' : 'Beginner';
 
     Swal.fire('Session Ended','Your training session has ended.','success');
@@ -432,7 +439,7 @@ document.getElementById('finishTraining').onclick=function(){
             duration: duration,
             accuracy: accuracy,
             rank: rank,
-            words_trained: currentIndex,
+            words_trained: typedTotal,
             started_at: new Date(startedAt).toISOString(),
             ended_at: new Date(endedAt).toISOString()
         })
