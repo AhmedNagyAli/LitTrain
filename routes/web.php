@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\BookController;
+use App\Http\Controllers\BookRecordController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PublishingRequestController;
 use App\Http\Controllers\TrainingSessionController;
@@ -56,6 +57,11 @@ Route::middleware(['auth'])->group(function () {
     });
 });
 
+
+Route::middleware('auth')->group(function () {
+    Route::get('/books/{book}/records/create', [BookRecordController::class, 'create'])->name('books.records.create');
+    Route::post('/books/{book}/records', [BookRecordController::class, 'store'])->name('books.records.store');
+});
 
 Route::get('/php-version', function () {
     return [

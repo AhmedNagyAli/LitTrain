@@ -4,11 +4,15 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\BookRecordResource\Pages;
 use App\Filament\Resources\BookRecordResource\RelationManagers;
+use App\Models\Book;
 use App\Models\BookRecord;
+use App\Models\Language;
+use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -29,61 +33,51 @@ class BookRecordResource extends Resource
             ->schema([
                 Forms\Components\Select::make('book_id')
                     ->label('Book')
-                    ->relationship('book', 'title')
+                    ->options(Book::all()->pluck('title', 'id'))
                     ->searchable()
-                    ->preload()
-                    ->required()
-                    ->createOptionForm([
-                        Forms\Components\TextInput::make('title')
-                            ->required()
-                            ->maxLength(255),
-                        Forms\Components\TextInput::make('author')
-                            ->required()
-                            ->maxLength(255),
-                        Forms\Components\Textarea::make('description')
-                            ->columnSpanFull(),
-                    ]),
+                    ->required(),
 
                 Forms\Components\Select::make('user_id')
                     ->label('User')
-                    ->relationship('user', 'name')
+                    ->options(User::all()->pluck('name', 'id'))
                     ->searchable()
-                    ->preload()
                     ->required(),
 
-                Forms\Components\Select::make('language_id')
-                    ->label('Language')
-                    ->relationship('language', 'name')
-                    ->searchable()
-                    ->preload()
-                    ->required()
-                    ->createOptionForm([
-                        Forms\Components\TextInput::make('name')
-                            ->required()
-                            ->maxLength(255),
-                        Forms\Components\TextInput::make('code')
-                            ->required()
-                            ->maxLength(10),
-                    ]),
-
                 Forms\Components\FileUpload::make('record_file')
-                    ->label('Audio File')
-                    //->acceptedFileTypes(['audio/mpeg', 'audio/wav', 'audio/mp3'])
-                     //->maxSize(102400) // 100MB (value is in KB)
-                    ->directory('book/records')
+                    ->label('Record File')
                     ->required()
-                    ->downloadable(),
+                    ->preserveFilenames()
+                    ->acceptedFileTypes(['audio/mpeg', 'audio/wav', 'audio/mp3'])
+                    ->maxSize(10240), // 10MB max
 
                 Forms\Components\TextInput::make('duration')
                     ->label('Duration (seconds)')
                     ->numeric()
-                    ->minValue(1)
                     ->required(),
+
+                Forms\Components\Select::make('language_id')
+                    ->label('Language')
+                    ->options(Language::all()->pluck('name', 'id'))
+                    ->searchable()
+                    ->required(),
+
+                Forms\Components\Select::make('status')
+                    ->options([
+                        'pending' => 'Pending',
+                        'approved' => 'Approved',
+                        'rejected' => 'Rejected',
+                    ])
+                    ->default('pending')
+                    ->required(),
+
+                Forms\Components\Textarea::make('rejected_reason')
+                    ->label('Rejection Reason')
+                    ->visible(fn ($get) => $get('status') === 'rejected')
+                    ->maxLength(65535),
             ]);
     }
 
-
-     public static function table(Table $table): Table
+    public static function table(Table $table): Table
     {
         return $table
             ->columns([
@@ -97,18 +91,25 @@ class BookRecordResource extends Resource
                     ->searchable()
                     ->sortable(),
 
+                Tables\Columns\TextColumn::make('duration')
+                    ->label('Duration (s)')
+                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('language.name')
                     ->label('Language')
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('duration')
-                    ->label('Duration')
-                    ->formatStateUsing(fn ($state) => gmdate('H:i:s', $state))
-                    ->sortable(),
+                Tables\Columns\BadgeColumn::make('status')
+                    ->colors([
+                        'warning' => 'pending',
+                        'success' => 'approved',
+                        'danger' => 'rejected',
+                    ]),
 
-                Tables\Columns\TextColumn::make('record_file')
-                    ->label('File')
-                    ->searchable(),
+                Tables\Columns\TextColumn::make('rejected_reason')
+                    ->label('Rejection Reason')
+                    ->limit(50)
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
@@ -121,51 +122,34 @@ class BookRecordResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('book')
-                    ->relationship('book', 'title')
-                    ->searchable()
-                    ->preload(),
+                SelectFilter::make('status')
+                    ->options([
+                        'pending' => 'Pending',
+                        'approved' => 'Approved',
+                        'rejected' => 'Rejected',
+                    ]),
 
-                Tables\Filters\SelectFilter::make('user')
-                    ->relationship('user', 'name')
-                    ->searchable()
-                    ->preload(),
+                SelectFilter::make('book_id')
+                    ->label('Book')
+                    ->options(Book::all()->pluck('title', 'id'))
+                    ->searchable(),
 
-                Tables\Filters\SelectFilter::make('language')
-                    ->relationship('language', 'name')
-                    ->searchable()
-                    ->preload(),
+                SelectFilter::make('user_id')
+                    ->label('User')
+                    ->options(User::all()->pluck('name', 'id'))
+                    ->searchable(),
 
-                Tables\Filters\Filter::make('duration')
-                    ->form([
-                        Forms\Components\TextInput::make('min_duration')
-                            ->label('Min Duration (seconds)')
-                            ->numeric(),
-                        Forms\Components\TextInput::make('max_duration')
-                            ->label('Max Duration (seconds)')
-                            ->numeric(),
-                    ])
-                    ->query(function (Builder $query, array $data): Builder {
-                        return $query
-                            ->when(
-                                $data['min_duration'],
-                                fn (Builder $query, $minDuration): Builder => $query->where('duration', '>=', $minDuration)
-                            )
-                            ->when(
-                                $data['max_duration'],
-                                fn (Builder $query, $maxDuration): Builder => $query->where('duration', '<=', $maxDuration)
-                            );
-                    }),
+                SelectFilter::make('language_id')
+                    ->label('Language')
+                    ->options(Language::all()->pluck('name', 'id'))
+                    ->searchable(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
-                Tables\Actions\ViewAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
+                Tables\Actions\DeleteBulkAction::make(),
             ]);
     }
 
