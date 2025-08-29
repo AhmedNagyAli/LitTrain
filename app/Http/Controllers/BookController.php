@@ -25,7 +25,7 @@ class BookController extends Controller
         //dd($relatedBooks);
 
 
-        return view('pages.book.show', compact('book', 'relatedBooks'));
+        return view('pages.books.show', compact('book', 'relatedBooks'));
     }
 
     public function read($id)
@@ -36,7 +36,7 @@ class BookController extends Controller
         abort(404, 'No PDF available for this book.');
     }
 
-    return view('pages.book.show', compact('book'));
+    return view('pages.books.show', compact('book'));
 }
 
 public function view($id)
@@ -82,6 +82,11 @@ public function train(Book $book, Request $request)
 
     $text = preg_replace('/\s+/', ' ', trim($text));
     return response()->json(['text'=>$text]);
+}
+public function audiobooks()
+{
+    $books = Book::whereHas('records')->latest()->paginate();
+    return view('pages.books.audiobooks', compact('books'));
 }
 
 

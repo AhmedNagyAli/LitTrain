@@ -10,7 +10,7 @@ class BookRecordController extends Controller
 {
     public function create(Book $book)
     {
-        return view('pages.book.records.create', compact('book'));
+        return view('pages.books.records.create', compact('book'));
     }
 
     public function store(Request $request, Book $book)

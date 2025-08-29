@@ -1,12 +1,15 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\AuthorController;
 use App\Http\Controllers\BookController;
 use App\Http\Controllers\BookRecordController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\PublisherController;
 use App\Http\Controllers\PublishingRequestController;
 use App\Http\Controllers\TrainingSessionController;
 use App\Http\Controllers\UserProfileController;
+use App\Models\Publisher;
 use Illuminate\Support\Facades\Route;
 
 
@@ -71,6 +74,19 @@ Route::middleware('auth')->group(function () {
     Route::get('/books/{book}/records/create', [BookRecordController::class, 'create'])->name('books.records.create');
     Route::post('/books/{book}/records', [BookRecordController::class, 'store'])->name('books.records.store');
 });
+
+Route::get('/audiobooks', [BookController::class, 'audiobooks'])->name('books.audiobooks');
+
+
+
+
+
+Route::get('/authors', [AuthorController::class, 'index'])->name('authors.index');
+Route::get('/publishers', [PublisherController::class, 'index'])->name('publishers.index');
+
+
+Route::get('/authors/{author}', [AuthorController::class, 'show'])->name('authors.show');
+Route::get('/publishers/{publisher}', [PublisherController::class, 'show'])->name('publishers.show');
 
 Route::get('/php-version', function () {
     return [

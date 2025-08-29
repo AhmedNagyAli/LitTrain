@@ -9,7 +9,7 @@
 <body class="bg-gray-100">
 
     @include('layouts.partials.navbar')
-    
+
 
     <main class="min-h-screen">
         @yield('content')
@@ -38,6 +38,8 @@
             console.error('JavaScript Error:', e.error);
         });
     </script>
+    <script src="//unpkg.com/alpinejs" defer></script>
+
 </body>
 
 </html>
