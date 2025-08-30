@@ -70,7 +70,7 @@
                             class="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                             @if(Auth::user()->avatar)
                                 <img class="h-9 w-9 rounded-full border border-gray-200"
-                                     src="{{ Auth::user()->avatar }}" alt="{{ Auth::user()->name }}">
+                                     src="{{ Auth::user()->avatar ? asset('storage/'.Auth::user()->avatar) : 'https://ui-avatars.com/api/?name='.urlencode(Auth::user()->name) }}" alt="{{ Auth::user()->name }}">
                             @else
                                 <div class="h-9 w-9 rounded-full bg-gradient-to-r from-indigo-600 to-purple-500 flex items-center justify-center text-white text-xs font-semibold">
                                     {{ strtoupper(substr(Auth::user()->name, 0, 2)) }}

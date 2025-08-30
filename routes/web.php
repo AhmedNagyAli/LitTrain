@@ -63,12 +63,22 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('user')->name('user.')->group(function () {
         Route::get('/dashboard', [UserProfileController::class, 'dashboard'])->name('dashboard');
         Route::get('/profile', [UserProfileController::class, 'profile'])->name('profile');
-                Route::post('/profile/update', [UserProfileController::class, 'updateProfile'])->name('profile.update');
         Route::get('/books', [UserProfileController::class, 'books'])->name('books');
         Route::get('/sessions', [UserProfileController::class, 'sessions'])->name('sessions');
     });
 });
 
+
+Route::middleware(['auth'])->group(function () {
+    //Route::get('/profile', [UserProfileController::class, 'index'])->name('user.profile');
+    Route::post('/profile/name', [UserProfileController::class, 'updateName'])->name('user.profile.update.name');
+    Route::post('/profile/email', [UserProfileController::class, 'updateEmail'])->name('user.profile.update.email');
+    Route::post('/profile/phone', [UserProfileController::class, 'updatePhone'])->name('user.profile.update.phone');
+    Route::post('/profile/bio', [UserProfileController::class, 'updateBio'])->name('user.profile.update.bio');
+    Route::post('/profile/dob', [UserProfileController::class, 'updateDob'])->name('user.profile.update.dob');
+    Route::post('/profile/language', [UserProfileController::class, 'updateLanguage'])->name('user.profile.update.language');
+    Route::post('/profile/avatar', [UserProfileController::class, 'updateAvatar'])->name('user.profile.update.avatar');
+});
 
 Route::middleware('auth')->group(function () {
     Route::get('/books/{book}/records/create', [BookRecordController::class, 'create'])->name('books.records.create');
