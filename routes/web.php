@@ -100,6 +100,9 @@ Route::get('/publishers', [PublisherController::class, 'index'])->name('publishe
 Route::get('/authors/{author}', [AuthorController::class, 'show'])->name('authors.show');
 Route::get('/publishers/{publisher}', [PublisherController::class, 'show'])->name('publishers.show');
 
+
+Route::get('/search', [HomeController::class, 'search'])->name('search');
+
 Route::get('/php-version', function () {
     return [
         'php_version' => PHP_VERSION,

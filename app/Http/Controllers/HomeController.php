@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Author;
 use App\Models\Book;
 use App\Models\Category;
 use App\Models\Language;
+use App\Models\Publisher;
 use Illuminate\Http\Request;
 
 class HomeController extends Controller
@@ -51,6 +53,9 @@ class HomeController extends Controller
             $query->where('categories.id', $selectedCategory);
         });
     }
+    $audibleBooks = Book::whereHas('records') // only books that have audio records
+            ->with('records') // eager load records relation
+            ->paginate(8, ['*'], 'audible_page');
 
     $books = $booksQuery->latest()->paginate(12);
 
@@ -60,9 +65,47 @@ class HomeController extends Controller
         'books',
         'selectedCategory',
         'languages',
+        'audibleBooks',
         'selectedLanguage'
     ));
 }
+
+public function search(Request $request)
+    {
+        $query = $request->get('q');
+        logger($query);
+
+        if (!$query) {
+            return response()->json([
+                'books' => [],
+                'authors' => [],
+                'publishers' => []
+            ]);
+        }
+
+        // Search Books
+        $books = Book::where('title', 'like', "%{$query}%")
+        ->orWhere('meta_title', 'like', "%{$query}%")
+        ->orWhere('description', 'like', "%{$query}%")
+        ->take(5)
+        ->get(['id', 'title', 'cover']);
+
+        // Search Authors
+        $authors = Author::where('name', 'like', "%{$query}%")
+            ->take(5)
+            ->get(['id', 'name', 'avatar']);
+
+        // Search Publishers
+        $publishers = Publisher::where('name', 'like', "%{$query}%")
+            ->take(5)
+            ->get(['id', 'name', 'avatar']);
+
+        return response()->json([
+            'books' => $books,
+            'authors' => $authors,
+            'publishers' => $publishers,
+        ]);
+    }
 
 
 }
