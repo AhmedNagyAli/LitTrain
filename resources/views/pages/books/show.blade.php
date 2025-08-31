@@ -101,37 +101,65 @@
                             Train Writing Skills
                         </button>
                     </div>
-                    @if($book->records->count())
-                    <div id="audioPlayerWrapper" class="fixed bottom-0 left-0 w-full bg-white dark:bg-slate-800 shadow-lg border-t border-slate-200 dark:border-slate-600 z-50">
+                    {{-- 🎧 Records List + Player --}}
+                    @if($book->records->where('status', 'approved')->count())
+    <div class="mt-8">
+        <h2 class="text-lg font-semibold mb-2">Available Audio Records</h2>
+        <ul class="space-y-2">
+            @foreach($book->records->where('status', 'approved') as $record)
+                <li>
+                    <button
+                        class="w-full text-left px-4 py-2 rounded bg-gray-100 hover:bg-orange-100 transition"
+                        onclick="playRecord('{{ asset('storage/'.$record->record_file) }}', '{{ $record->user->name ?? 'Unknown User' }}')">
+                        🎤 {{ $record->user->name ?? 'Unknown User' }}
+                        <span class="text-sm text-gray-500 ml-2">({{ $record->duration }}s)</span>
+                    </button>
+                </li>
+            @endforeach
+        </ul>
+    </div>
+
+    <div id="audioPlayerWrapper" class="fixed bottom-0 left-0 w-full bg-white dark:bg-slate-800 shadow-lg border-t border-slate-200 dark:border-slate-600 z-50">
         <div class="max-w-7xl mx-auto px-4 py-3 flex items-center space-x-4">
             {{-- Book Cover --}}
-            <img src="{{ asset('storage/'.$book->cover) }}" alt="{{ $book->title }}" class="w-16 h-16 rounded-lg object-cover" onerror="this.src='{{ asset('images/placeholder-book.jpg') }}'">
+            <img src="{{ asset('storage/'.$book->cover) }}" alt="{{ $book->title }}"
+                 class="w-16 h-16 rounded-lg object-cover"
+                 onerror="this.src='{{ asset('images/placeholder-book.jpg') }}'">
 
             {{-- Book Info --}}
             <div class="flex-1 min-w-0">
                 <p class="text-sm text-orange-500 font-semibold truncate">Audible</p>
-                <h3 class="text-md font-semibold text-slate-800 dark:text-slate-50 truncate">{{ $book->title }}</h3>
-                <p class="text-sm text-slate-500 dark:text-slate-400 truncate">{{ $book->author->name ?? 'Unknown Author' }}</p>
+                <h3 id="recordTitle" class="text-md font-semibold text-slate-800 dark:text-slate-50 truncate">
+                    {{ $book->title }}
+                </h3>
+                <p id="recordUser" class="text-sm text-slate-500 dark:text-slate-400 truncate"></p>
             </div>
 
             {{-- Audio Controls --}}
             <audio id="bookAudio" class="w-1/2" controls preload="metadata">
-                @foreach($book->records as $record)
-                    <source src="{{ asset('storage/'.$record->record_file) }}" type="audio/mpeg">
-                @endforeach
+                <source id="audioSource" src="" type="audio/mpeg">
                 Your browser does not support the audio element.
             </audio>
-
-            {{-- Play/Pause Button (Optional JS enhancement) --}}
-            <button id="toggleAudio" class="ml-4 bg-orange-500 hover:bg-orange-600 text-white rounded-full w-12 h-12 flex items-center justify-center">
-                <svg id="playIcon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-6.518-3.76A1 1 0 007 8.293v7.414a1 1 0 001.234.97l6.518-1.887a1 1 0 000-1.878z"/>
-                </svg>
-            </button>
         </div>
     </div>
+@endif
 
-                    @endif
+
+                    {{-- 🎤 Record Button --}}
+<div class="mt-6">
+    @auth
+        <a href="{{ route('books.records.create', $book->id) }}"
+           class="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg font-medium transition">
+            🎤 Record Audio for this Book
+        </a>
+    @else
+        <a href="{{ route('login') }}"
+           class="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg font-medium transition">
+            🎤 Record Audio for this Book
+        </a>
+    @endauth
+</div>
+
                 </div>
             </div>
         </div>
@@ -220,11 +248,6 @@
 {{-- ✅ PDF.js --}}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
-const trainUrl = @json(route('books.train', $book->id));
-const saveUrl  = @json(route('books.training_sessions.store', $book->id));
-const csrfToken = @json(csrf_token());
-const isAuth = @json(auth()->check());
 @if($book->records->count())
  <script>
         const audio = document.getElementById('bookAudio');
@@ -240,9 +263,24 @@ const isAuth = @json(auth()->check());
                 playIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-6.518-3.76A1 1 0 007 8.293v7.414a1 1 0 001.234.97l6.518-1.887a1 1 0 000-1.878z"/>`; // Play icon
             }
         });
+        function playRecord(src, userName) {
+    const audio = document.getElementById('bookAudio');
+    const source = document.getElementById('audioSource');
+    source.src = src;
+    audio.load();
+    audio.play();
+
+    document.getElementById('recordUser').textContent = "Narrated by: " + userName;
+}
     </script>
 
 @endif
+<script>
+const trainUrl = @json(route('books.train', $book->id));
+const saveUrl  = @json(route('books.training_sessions.store', $book->id));
+const csrfToken = @json(csrf_token());
+const isAuth = @json(auth()->check());
+
 /* ------------------- 📖 PDF.js Viewer ------------------- */
 let pdfDoc = null;
 let currentPage = 0;
@@ -287,7 +325,7 @@ let currentIndex = 0;
 let buffer = '';
 let startedAt = null;
 let typedCorrect = 0;
-
+let typedTotal = 0;
 function startTraining(bookId, langCode) {
     if (langCode !== 'en') {
         Swal.fire('Not Allowed', 'Training works only for English books for now.', 'warning');
@@ -349,6 +387,7 @@ function handler(e) {
     if(!startedAt) startedAt=Date.now();
     if(e.key===' '){
         e.preventDefault();
+        typedTotal++;
         const expected = words[currentIndex] || '';
         const currentWordEl = document.querySelectorAll('.word')[currentIndex];
         if(normalize(buffer)===normalize(expected)){
@@ -374,16 +413,16 @@ function highlightCurrent(){
 
 function updateStats(){
     const time=(Date.now()-startedAt)/1000;
-    document.getElementById('typed-count').textContent=typedCorrect;
-    document.getElementById('speed').textContent=(typedCorrect/Math.max(1,time)).toFixed(2);
-    document.getElementById('accuracy').textContent=(currentIndex?typedCorrect/currentIndex*100:0).toFixed(1);
+    document.getElementById('typed-count').textContent=typedTotal;
+    document.getElementById('speed').textContent=(typedTotal/Math.max(1,time)).toFixed(2);
+    document.getElementById('accuracy').textContent=(typedTotal?typedCorrect/typedTotal*100:0).toFixed(1);
 }
 
 /* ------------------- ✅ End Training -> Save Session ------------------- */
 document.getElementById('finishTraining').onclick=function(){
     const endedAt = Date.now();
     const duration = Math.floor((endedAt - startedAt)/1000);
-    const accuracy = currentIndex ? (typedCorrect/currentIndex*100).toFixed(1) : 0;
+    const accuracy = typedTotal ? (typedCorrect/typedTotal*100).toFixed(1) : 0;
     const rank = accuracy >= 90 ? 'Expert' : accuracy >= 70 ? 'Intermediate' : 'Beginner';
 
     Swal.fire('Session Ended','Your training session has ended.','success');
@@ -400,7 +439,7 @@ document.getElementById('finishTraining').onclick=function(){
             duration: duration,
             accuracy: accuracy,
             rank: rank,
-            words_trained: currentIndex,
+            words_trained: typedTotal,
             started_at: new Date(startedAt).toISOString(),
             ended_at: new Date(endedAt).toISOString()
         })

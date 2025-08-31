@@ -6,7 +6,15 @@ use Illuminate\Database\Eloquent\Model;
 
 class BookRecord extends Model
 {
-    protected $fillable = ['book_id','user_id','record_file','duration','language_id'];
+    protected $fillable = [
+        'book_id',
+        'user_id',
+        'record_file',
+        'duration',
+        'language_id',
+        'status',
+        'rejected_reason', // ✅ new field
+    ];
 
     public function book()
     {

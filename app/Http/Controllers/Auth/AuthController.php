@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
+use App\Models\Language;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 class AuthController extends Controller
@@ -37,28 +40,45 @@ class AuthController extends Controller
     // Show register page
     public function showRegister()
     {
-        return view('auth.register');
+        $languages = Language::orderBy('name')->get();
+        return view('auth.register', compact('languages'));
     }
 
     // Handle registration
     public function register(Request $request)
-    {
-        $data = $request->validate([
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:users',
-            'password' => 'required|min:6|confirmed',
-        ]);
+{
+    // First, check what's actually coming in the request
+    \Log::debug('Register request data:', $request->all());
 
-        $user = User::create([
-            'name'     => $data['name'],
-            'email'    => $data['email'],
-            'password' => Hash::make($data['password']),
-        ]);
-
-        Auth::login($user);
-
-        return redirect()->route('home.index')->with('success', 'Account created successfully!');
+    // Check if this is a POST request
+    if (!$request->isMethod('post')) {
+        return back()->with('debug', 'Request method is: ' . $request->method());
     }
+
+    // Validate the request
+    $validated = $request->validate([
+        'name'         => 'required|string|max:255',
+        'email'        => 'required|string|email|max:255|unique:users,email',
+        'phone'        => 'nullable|string|max:20',
+        'password'     => 'required|string|min:6|confirmed',
+        'language_id'  => 'required|exists:languages,id',
+    ]);
+
+    // Create user
+    $user = User::create([
+        'name'              => $validated['name'],
+        'email'             => $validated['email'],
+        'phone'             => $validated['phone'] ?? null,
+        'password'          => Hash::make($validated['password']),
+        'language_id'       => $validated['language_id'],
+        'role'              => UserRole::Reader,
+        'is_email_verified' => false,
+    ]);
+
+    Auth::login($user);
+
+    return redirect()->route('home.index')->with('success', 'Account created successfully!');
+}
 
     // Handle logout
     public function logout(Request $request)
@@ -68,5 +88,29 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('home.index')->with('success', 'You have been logged out.');
+    }
+
+    public function requestForm()
+    {
+        return view('auth.forgot-password');
+    }
+
+    /**
+     * Handle sending reset link email.
+     */
+    public function sendResetLink(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+        ]);
+
+        // Send reset link
+        $status = Password::sendResetLink(
+            $request->only('email')
+        );
+
+        return $status === Password::RESET_LINK_SENT
+            ? back()->with(['success' => __($status)])
+            : back()->withErrors(['email' => __($status)]);
     }
 }

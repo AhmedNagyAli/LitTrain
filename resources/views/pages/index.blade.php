@@ -61,10 +61,36 @@
         @endforeach
     </div>
 
-    {{-- Pagination --}}
-    <div class="mt-6">
-        {{ $books->links() }}
-    </div>
+    {{-- Modern Pagination --}}
+@if ($books->hasPages())
+<div class="mt-6 flex justify-center space-x-2">
+    {{-- Previous Page Link --}}
+    @if ($books->onFirstPage())
+        <span class="px-3 py-1 rounded-lg bg-gray-200 text-gray-500 cursor-not-allowed">&laquo;</span>
+    @else
+        <a href="{{ $books->previousPageUrl() }}" class="px-3 py-1 rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-indigo-600 hover:text-white transition">
+            &laquo;
+        </a>
+    @endif
+
+    {{-- Pagination Elements --}}
+    @foreach ($books->getUrlRange(1, $books->lastPage()) as $page => $url)
+        @if ($page == $books->currentPage())
+            <span class="px-3 py-1 rounded-lg bg-indigo-600 text-white font-medium">{{ $page }}</span>
+        @else
+            <a href="{{ $url }}" class="px-3 py-1 rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-indigo-600 hover:text-white transition">{{ $page }}</a>
+        @endif
+    @endforeach
+
+    {{-- Next Page Link --}}
+    @if ($books->hasMorePages())
+        <a href="{{ $books->nextPageUrl() }}" class="px-3 py-1 rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-indigo-600 hover:text-white transition">&raquo;</a>
+    @else
+        <span class="px-3 py-1 rounded-lg bg-gray-200 text-gray-500 cursor-not-allowed">&raquo;</span>
+    @endif
+</div>
+@endif
+
 </div>
 @endsection
 
