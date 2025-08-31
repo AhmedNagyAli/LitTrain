@@ -52,11 +52,13 @@ Route::post('/books/{book}/training-sessions', [TrainingSessionController::class
     ->name('books.training_sessions.store')
     ->middleware('auth');
 
-
-    Route::get('/publishing-request/create', [PublishingRequestController::class, 'create'])
-    ->name('publishing.request.create')->middleware('auth');
+Route::middleware(['auth'])->group(function(){
+Route::get('/publishing-request/create', [PublishingRequestController::class, 'create'])
+    ->name('publishing.request.create');
 Route::post('/publishing-request', [PublishingRequestController::class, 'store'])
-    ->name('publishing.request.store')->middleware('auth');
+    ->name('publishing-request.store');
+
+});
 
 
 Route::middleware(['auth'])->group(function () {
