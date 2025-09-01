@@ -195,8 +195,7 @@
                 results += `<div class="p-2 font-semibold text-gray-600">📚 Books</div>`;
                 data.books.forEach(book => {
                     results += `
-                        <a href="/books/${book.id}" class="flex items-center px-4 py-2 hover:bg-gray-50">
-                            <img src="${book.cover ?? '/images/default-book.png'}" class="w-10 h-10 rounded mr-3 object-cover">
+                <img src="${book.cover ? '/storage/' + book.cover : '/images/default-book.png'}" class="w-10 h-10 rounded mr-3 object-cover">                            <img src="${book.cover ?? '/images/default-book.png'}" class="w-10 h-10 rounded mr-3 object-cover">
                             <span class="text-gray-800">${book.title}</span>
                         </a>`;
                 });
@@ -207,8 +206,7 @@
                 data.authors.forEach(author => {
                     results += `
                         <a href="/authors/${author.id}" class="flex items-center px-4 py-2 hover:bg-gray-50">
-                            <img src="${author.avatar ?? '/images/default-avatar.png'}" class="w-10 h-10 rounded-full mr-3 object-cover">
-                            <span class="text-gray-800">${author.name}</span>
+                <img src="${author.avatar ? '/storage/' + author.avatar : '/images/default-avatar.png'}" class="w-10 h-10 rounded-full mr-3 object-cover">                            <span class="text-gray-800">${author.name}</span>
                         </a>`;
                 });
             }
@@ -218,8 +216,7 @@
                 data.publishers.forEach(publisher => {
                     results += `
                         <a href="/publishers/${publisher.id}" class="flex items-center px-4 py-2 hover:bg-gray-50">
-                            <img src="${publisher.logo ?? '/images/default-publisher.png'}" class="w-10 h-10 rounded mr-3 object-cover">
-                            <span class="text-gray-800">${publisher.name}</span>
+                <img src="${publisher.avatar ? '/storage/' + publisher.avatar : '/images/default-publisher.png'}" class="w-10 h-10 rounded mr-3 object-cover">                            <span class="text-gray-800">${publisher.name}</span>
                         </a>`;
                 });
             }

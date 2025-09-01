@@ -4,7 +4,7 @@
     <!-- 🔹 Background image (optional) -->
     <div class="absolute inset-0">
         <img src="{{ asset('images/books-hero.jpg') }}"
-             
+
              class="w-full h-full object-cover opacity-30">
     </div>
     <div class="absolute inset-0 bg-black/40"></div>
