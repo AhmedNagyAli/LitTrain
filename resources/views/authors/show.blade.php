@@ -8,7 +8,7 @@
         <div class="flex flex-col md:flex-row">
             <!-- Author Avatar -->
             <div class="md:w-1/3 p-6 flex items-center justify-center">
-                <img src="{{ $author->avatar ?? 'https://via.placeholder.com/150' }}"
+                <img src="{{ asset('storage/' .$author->avatar) ?? 'https://via.placeholder.com/150' }}"
                      alt="{{ $author->name }}"
                      class="w-40 h-40 rounded-full object-cover shadow-md">
             </div>

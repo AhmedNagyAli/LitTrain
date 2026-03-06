@@ -66,6 +66,7 @@
                     @endif
                 @endauth
             </div>
+            
 
             <!-- Right Section (Profile/Login) -->
             <div class="hidden md:flex items-center space-x-4">
